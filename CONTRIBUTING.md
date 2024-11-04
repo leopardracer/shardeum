@@ -1,12 +1,12 @@
-# Contrubution guide
+# Contribution guide
 This is a contribution guide for this repository. Recommend to read this before working on the project.
 
 # Branch Organization
 
-- This repo has two long running branch, `main` and `dev`. 
+- This repo has two long-running branch, `main` and `dev`. 
 - The two branch are protected.
 - All new branch must be on top of or fork from developement branch `dev`.
-- All branches submiting to development branch must be tested.
+- All branches submitting to development branch must be tested.
 
 This repo try to keep a clean single straight git history line.
 
