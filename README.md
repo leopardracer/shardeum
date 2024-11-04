@@ -51,7 +51,7 @@ Shardeum is an innovative EVM-compliant blockchain platform that leverages dynam
 
 ### Setting Up Your Environment
 
-Shardeum requires specific versions of Nodejs, Rust and other build tools to run. 
+Shardeum requires specific versions of Node.js, Rust and other build tools to run. 
 
 We have detailed setup instructions [in this page](local-environment-setup.md) 
 
