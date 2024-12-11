@@ -12,6 +12,7 @@ import {
   UnstakeCoinsTX,
   WrappedEVMAccount,
   NetworkAccount,
+  InternalTxWithSingleSign,
 } from '../shardeum/shardeumTypes'
 import * as AccountsStorage from '../storage/accountStorage'
 import { validateClaimRewardTx } from '../tx/claimReward'
@@ -39,8 +40,9 @@ import {
 import { fixBigIntLiteralsToBigInt } from '../utils/serialization'
 import { validatePenaltyTX } from '../tx/penalty/transaction'
 import { bytesToHex } from '@ethereumjs/util'
-import { logFlags, shardusConfig } from '..'
+import { logFlags, shardusConfig, getStakeTxBlobFromEVMTx } from '..'
 import { Sign } from '@shardus/core/dist/shardus/shardus-types'
+import { validateTransferFromSecureAccount } from '../shardeum/secureAccounts'
 
 /**
  * Checks that Transaction fields are valid
@@ -73,14 +75,6 @@ export const validateTxnFields =
         }
       }
       const txId = generateTxId(tx)
-
-      if (isDebugTx(tx)) {
-        return {
-          success: true,
-          reason: 'always valid',
-          txnTimestamp,
-        }
-      }
 
       if (isSetCertTimeTx(tx)) {
         const setCertTimeTx = tx as SetCertTime
@@ -177,15 +171,31 @@ export const validateTxnFields =
               txnTimestamp: txnTimestamp,
             }
           }
-          success = crypto.verifyObj(internalTX)
+          success = crypto.verifyObj(internalTX as InternalTxWithSingleSign)
           return {
             success,
             reason,
             txnTimestamp: txnTimestamp,
           }
+        } else if (tx.internalTXType === InternalTXType.TransferFromSecureAccount) {
+          // Perform thorough verification
+          const verifyResult = validateTransferFromSecureAccount(tx, shardus)
+          if (!verifyResult.success) {
+            return {
+              success,
+              reason: verifyResult.reason,
+              txnTimestamp,
+            }
+          }
+
+          return {
+            success: true,
+            reason: 'Valid TransferFromSecureAccount transaction',
+            txnTimestamp,
+          }
         } else {
           try {
-            success = crypto.verifyObj(internalTX)
+            success = crypto.verifyObj(internalTX as InternalTxWithSingleSign)
           } catch (e) {
             reason = 'Invalid signature for internal tx'
           }
@@ -195,6 +205,14 @@ export const validateTxnFields =
           success,
           reason,
           txnTimestamp: txnTimestamp,
+        }
+      }
+
+      if (isDebugTx(tx)) {
+        return {
+          success: true,
+          reason: 'always valid',
+          txnTimestamp,
         }
       }
 
@@ -342,8 +360,10 @@ export const validateTxnFields =
 
         if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
           if (ShardeumFlags.VerboseLogs) console.log('Validating stake coins tx fields', appData)
+          appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
+          appData.internalTx.stake = BigInt(appData.internalTx.stake)
           const stakeCoinsTx = appData.internalTx as StakeCoinsTX
-          const networkAccount = appData.networkAccount as NetworkAccount
+          const networkAccount = AccountsStorage.cachedNetworkAccount
           const minStakeAmountUsd = networkAccount.current.stakeRequiredUsd
           const minStakeAmount = scaleByStabilityFactor(
             minStakeAmountUsd,
@@ -456,7 +476,17 @@ export const validateTxnFields =
             } else if (shardus.isNodeActiveByPubKey(nodeAccount.id) === true) {
               success = false
               reason = `This node is still active in the network. You can unstake only after the node leaves the network!`
-            } else if (
+            } else if (shardus.isNodeSelectedByPubKey(nodeAccount.id)) {
+              success = false
+              reason = `This node is still selected in the network. You can unstake only after the node leaves the network!`
+            } else if (shardus.isNodeReadyByPubKey(nodeAccount.id)) {
+              success = false
+              reason = `This node is still in ready state in the network. You can unstake only after the node leaves the network!`
+            } else if (shardus.isNodeSyncingByPubKey(nodeAccount.id)) {
+              success = false
+              reason = `This node is still syncing in the network. You can unstake only after the node leaves the network!`
+            }
+            else if (
               nodeAccount.rewardEndTime === 0 &&
               nodeAccount.rewardStartTime > 0 &&
               !(unstakeCoinsTX.force && ShardeumFlags.allowForceUnstake)

@@ -1,19 +1,19 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 5ccae91..e4f6cb5 100644
+index f84bb31..c9a4f0d 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
-@@ -128,8 +128,8 @@ config = merge(config, {
+@@ -143,8 +143,8 @@ config = merge(config, {
      p2p: {
        cycleDuration: 60,
        minNodesToAllowTxs: 1, // to allow single node networks
--      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 300, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
--      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 300,
+-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 640, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 640,
 +      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 25, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
 +      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 25,
        maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
        maxJoinedPerCycle: 10,
        maxSyncingPerCycle: 10,
-@@ -142,7 +142,7 @@ config = merge(config, {
+@@ -157,7 +157,7 @@ config = merge(config, {
        amountToShrink: 5,
        maxDesiredMultiplier: 1.2,
        maxScaleReqs: 250, // todo: this will become a variable config but this should work for a 500 node demo
@@ -22,7 +22,25 @@ index 5ccae91..e4f6cb5 100644
        //these are new feature in 1.3.0, we can make them default:true in shardus-core later
  
        // 1.2.3 migration starts
-@@ -306,11 +306,11 @@ config = merge(
+@@ -277,7 +277,7 @@ config = merge(config, {
+     sharding: {
+       nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
+         ? parseInt(process.env.nodesPerConsensusGroup)
+-        : 128, //128 is the final goal
++        : 10, //128 is the final goal
+       nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
+       executeInOneShard: true,
+     },
+@@ -313,7 +313,7 @@ config = merge(config, {
+       archiverDataSubscriptionsUpdate: true,
+       startInServiceMode: ShardeumFlags.startInServiceMode,
+       tickets: {
+-        updateTicketListTimeInMs: 600000,
++        updateTicketListTimeInMs: 300000,
+         ticketTypes: [
+           { type: 'silver', enabled: true }
+         ]
+@@ -327,11 +327,11 @@ config = merge(
    config,
    {
      server: {
@@ -34,6 +52,37 @@ index 5ccae91..e4f6cb5 100644
 -        startInErrorLogMode: false,
 +        startInFatalsLogMode: false, // true setting good for big aws test with nodes joining under stress.
 +        startInErrorLogMode: true,
+         verboseNestedCounters: false,
          robustQueryDebug: false,
          fakeNetworkDelay: 0,
-         disableSnapshots: true, // do not check in if set to false
+diff --git a/src/shardeum/shardeumFlags.ts b/src/shardeum/shardeumFlags.ts
+index f8aaeab..963da96 100644
+--- a/src/shardeum/shardeumFlags.ts
++++ b/src/shardeum/shardeumFlags.ts
+@@ -136,7 +136,7 @@ export const ShardeumFlags: ShardeumFlags = {
+   Virtual0Address: true,
+   GlobalNetworkAccount: true,
+   FirstNodeRewardCycle: 100,
+-  blockProductionRate: 6,
++  blockProductionRate: 3,
+   initialBlockNumber: 0,
+   maxNumberOfOldBlocks: 256,
+   SelfTest: false,
+@@ -146,7 +146,7 @@ export const ShardeumFlags: ShardeumFlags = {
+   DebugRestoreArchiveBatch: 2000,
+   CheckNonce: true,
+   txNoncePreCheck: false,
+-  txBalancePreCheck: true ,
++  txBalancePreCheck: false,
+   autoGenerateAccessList: true,
+   forwardGenesisAccounts: true,
+   UseDBForAccounts: true,
+@@ -180,7 +180,7 @@ export const ShardeumFlags: ShardeumFlags = {
+     ['canUnstake/:nominee/:nominator']: 5,
+   },
+   generateMemoryPatternData: true,
+-  StakingEnabled: true,
++  StakingEnabled: false,
+   ModeEnabled: true,
+   AdminCertEnabled: false,
+   minActiveNodesForStaking: 5,
